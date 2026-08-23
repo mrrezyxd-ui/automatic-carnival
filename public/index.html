@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Webhook Studio</title>
+<meta name="theme-color" content="#0d0e12">
+<meta property="og:title" content="Webhook Studio — Discord Webhook Builder">
+<meta property="og:description" content="Build and send beautiful Discord webhooks with a live preview.">
+<meta property="og:image" content="https://picsum.photos/seed/webhookstudio/1200/630.jpg">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{font-family:'Inter',sans-serif;box-sizing:border-box}
+body{margin:0;background:#0d0e12;color:#dbdee1;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+::selection{background:rgba(88,101,242,0.3);color:#c9cdfb}
+
+/* Animated BG */
+.bg-anim{position:fixed;inset:0;z-index:-2;background:linear-gradient(135deg,#0d0e12 0%,#151027 25%,#0d1117 50%,#13111c 75%,#0d0e12 100%);background-size:400% 400%;animation:bgShift 20s ease infinite}
+@keyframes bgShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+/* Glow blobs */
+.blob{position:fixed;border-radius:50%;filter:blur(100px);opacity:0.15;z-index:-1;pointer-events:none}
+.blob-1{width:500px;height:500px;background:#5865f2;top:-10%;left:-5%;animation:blobFloat 18s ease-in-out infinite}
+.blob-2{width:400px;height:400px;background:#eb459e;bottom:-10%;right:-5%;animation:blobFloat 22s ease-in-out infinite reverse}
+.blob-3{width:300px;height:300px;background:#3ba55d;top:50%;left:50%;animation:blobFloat 15s ease-in-out infinite 3s}
+@keyframes blobFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-30px) scale(1.05)}66%{transform:translate(-20px,20px) scale(0.95)}}
+
+/* Particles canvas */
+#particles{position:fixed;inset:0;z-index:-1;pointer-events:none}
+
+/* Glass */
+.glass{background:rgba(43,45,49,0.55);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.06);border-radius:16px}
+.glass-sm{background:rgba(43,45,49,0.4);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.05);border-radius:12px}
+
+/* Inputs */
+.wb-input{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#dbdee1;padding:10px 12px;font-size:14px;width:100%;transition:all 0.2s;outline:none}
+.wb-input:focus{border-color:#5865f2;box-shadow:0 0 0 1px rgba(88,101,242,0.3)}
+.wb-input::placeholder{color:rgba(255,255,255,0.2)}
+textarea.wb-input{resize:vertical;min-height:60px;font-family:inherit}
+input[type="color"].wb-color{width:44px;height:44px;padding:2px;border-radius:10px;cursor:pointer;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08)}
+input[type="color"].wb-color::-webkit-color-swatch-wrapper{padding:2px}
+input[type="color"].wb-color::-webkit-color-swatch{border:none;border-radius:7px}
+input[type="checkbox"].wb-check{appearance:none;width:20px;height:20px;border:2px solid rgba(255,255,255,0.15);border-radius:6px;background:rgba(0,0,0,0.3);cursor:pointer;transition:all 0.2s;position:relative;flex-shrink:0}
+input[type="checkbox"].wb-check:checked{background:#5865f2;border-color:#5865f2}
+input[type="checkbox"].wb-check:checked::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:700}
+
+/* Labels */
+.wb-label{display:block;font-size:12px;font-weight:600;color:#b5bac1;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em}
+.char-count{font-size:11px;color:#949ba4;text-align:right;margin-top:3px;transition:color 0.2s}
+.char-count.warn{color:#f0b232}
+.char-count.danger{color:#f23f43}
+
+/* Buttons */
+.wb-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.wb-btn:active{transform:scale(0.97)}
+.wb-btn-primary{background:#5865f2;color:white}
+.wb-btn-primary:hover{background:#4752c4;box-shadow:0 4px 20px rgba(88,101,242,0.3)}
+.wb-btn-success{background:#23a559;color:white}
+.wb-btn-success:hover{background:#1a8a48;box-shadow:0 4px 20px rgba(35,165,89,0.3)}
+.wb-btn-danger{background:rgba(242,63,67,0.15);color:#f23f43;border:1px solid rgba(242,63,67,0.2)}
+.wb-btn-danger:hover{background:rgba(242,63,67,0.25)}
+.wb-btn-ghost{background:rgba(255,255,255,0.04);color:#b5bac1;border:1px solid rgba(255,255,255,0.06)}
+.wb-btn-ghost:hover{background:rgba(255,255,255,0.08);color:#dbdee1;border-color:rgba(255,255,255,0.12)}
+.wb-btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.wb-btn:disabled{opacity:0.5;pointer-events:none}
+
+/* Spinner */
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Sections */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;border-radius:16px;transition:background 0.2s}
+.section-hdr:hover{background:rgba(255,255,255,0.03)}
+.section-hdr .chevron{transition:transform 0.3s}
+.section-hdr.collapsed .chevron{transform:rotate(-90deg)}
+.section-body{overflow:hidden;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;max-height:3000px;opacity:1}
+.section-body.collapsed{max-height:0;opacity:0}
+
+/* Template cards */
+.tmpl-card{background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden}
+.tmpl-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(88,101,242,0.05));opacity:0;transition:opacity 0.3s}
+.tmpl-card:hover{border-color:rgba(88,101,242,0.3);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
+.tmpl-card:hover::before{opacity:1}
+
+/* Field row */
+.field-row{background:rgba(0,0,0,0.15);border:1px solid rgba(255,255,255,0.05);border-radius:12px;padding:14px;transition:all 0.3s}
+.field-row:hover{border-color:rgba(255,255,255,0.1)}
+
+/* Discord Preview */
+.dc-msg{background:#313338;border-radius:8px;overflow:hidden}
+.dc-msg-header{display:flex;align-items:center;gap:10px;padding:12px 16px}
+.dc-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#5865f2,#eb459e);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dc-embed{margin:0 16px 12px 60px;border-radius:8px;overflow:hidden;border-left:4px solid #5865f2;background:#2b2d31;max-width:520px}
+.dc-embed-author{display:flex;align-items:center;gap:8px;padding:12px 16px 0}
+.dc-embed-author-icon{width:24px;height:24px;border-radius:50%;flex-shrink:0}
+.dc-embed-title{padding:4px 16px 0;font-size:16px;font-weight:600;color:#00aff4;cursor:pointer}
+.dc-embed-title:hover{text-decoration:underline}
+.dc-embed-desc{padding:4px 16px;font-size:14px;color:#dbdee1;line-height:1.4;white-space:pre-wrap;word-wrap:break-word}
+.dc-embed-fields{padding:8px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dc-embed-field{background:rgba(0,0,0,0.2);border-radius:4px;padding:6px 10px;min-width:0}
+.dc-embed-field.inline-false{grid-column:span 3}
+.dc-embed-field-name{font-size:13px;font-weight:700;color:#dbdee1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-embed-field-value{font-size:13px;color:#b5bac1;white-space:pre-wrap;word-wrap:break-word;margin-top:2px}
+.dc-embed-img{max-width:100%;display:block;margin-top:8px;border-radius:4px}
+.dc-embed-footer{display:flex;align-items:center;gap:6px;padding:8px 16px 12px}
+.dc-embed-footer-icon{width:20px;height:20px;border-radius:50%;flex-shrink:0}
+.dc-bot-badge{background:#5865f2;color:white;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;line-height:1.4}
+.dc-timestamp{font-size:12px;color:#949ba4}
+.dc-content{padding:0 16px 4px 60px;font-size:14px;color:#dbdee1;line-height:1.375;white-space:pre-wrap;word-wrap:break-word}
+.dc-empty{padding:40px 16px;text-align:center;color:#949ba4;font-size:14px}
+
+/* Color presets */
+.color-preset{width:28px;height:28px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all 0.2s;flex-shrink:0}
+.color-preset:hover{transform:scale(1.15);border-color:rgba(255,255,255,0.3)}
+.color-preset.active{border-color:white;box-shadow:0 0 10px rgba(255,255,255,0.2)}
+
+/* Toast */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:14px 20px;border-radius:12px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;animation:toastIn 0.4s cubic-bezier(0.16,1,0.3,1);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.06);min-width:280px;max-width:420px}
+.toast.success{background:rgba(35,165,89,0.15);color:#57f287}
+.toast.error{background:rgba(242,63,67,0.15);color:#f23f43}
+.toast.info{background:rgba(88,101,242,0.15);color:#949cf7}
+.toast.removing{animation:toastOut 0.3s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px) scale(0.95)}to{opacity:1;transform:translateX(0) scale(1)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(40px) scale(0.95)}}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-box{background:#2b2d31;border:1px solid rgba(255,255,255,0.08);border-radius:16px;width:100%;max-width:640px;max-height:80vh;overflow:hidden;transform:scale(0.95) translateY(10px);transition:transform 0.3s cubic-bezier(0.16,1,0.3,1)}
+.modal-overlay.open .modal-box{transform:scale(1) translateY(0)}
+
+/* Mobile preview toggle */
+#mobilePreviewBtn{display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:50;padding:12px 24px;border-radius:50px;background:#5865f2;color:white;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 24px rgba(88,101,242,0.4);transition:all 0.2s}
+#mobilePreviewBtn:active{transform:translateX(-50%) scale(0.95)}
+@media(max-width:1023px){
+  #mobilePreviewBtn{display:flex;align-items:center;gap:8px}
+  .preview-panel{position:fixed!important;inset:0;z-index:40;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);padding:20px;overflow-y:auto;transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.16,1,0.3,1)}
+  .preview-panel.show{transform:translateY(0)}
+  .dc-embed{margin-left:60px;margin-right:8px}
+}
+
+/* Tooltip */
+[data-tip]{position:relative}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#1a1b1e;color:#dbdee1;font-size:12px;font-weight:500;padding:6px 10px;border-radius:6px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,0.08);z-index:20;animation:tipIn 0.15s ease}
+@keyframes tipIn{from{opacity:0;transform:translateX(-50%) translateY(4px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Password toggle */
+.pw-wrap{position:relative}
+.pw-wrap .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#949ba4;cursor:pointer;padding:4px;display:flex;align-items:center;transition:color 0.2s}
+.pw-wrap .pw-toggle:hover{color:#dbdee1}
+</style>
+</head>
+<body>
+
+<div class="bg-anim"></div>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+<canvas id="particles"></canvas>
+
+<!-- Navbar -->
+<nav class="sticky top-0 z-30 glass" style="border-radius:0;border-left:0;border-right:0;border-top:0">
+  <div class="max-w-[1600px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5865f2] to-[#eb459e] flex items-center justify-center shadow-lg shadow-[#5865f2]/20">
+        <span class="iconify text-white text-lg" data-icon="ph:webhooks-logo-fill"></span>
+      </div>
+      <div>
+        <span class="font-bold text-base tracking-tight">Webhook Studio</span>
+        <span class="hidden sm:inline text-xs text-[#949ba4] ml-2">by RedRex</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="saveDraft()" class="wb-btn wb-btn-ghost wb-btn-sm" data-tip="Save Draft"><span class="iconify" data-icon="ph:floppy-disk"></span><span class="hidden sm:inline">Save</span></button>
+      <button onclick="loadDraft()" class="wb-btn wb-btn-ghost wb-btn-sm" data-tip="Load Draft"><span class="iconify" data-icon="ph:folder-open"></span><span class="hidden sm:inline">Load</span></button>
+      <button onclick="exportJSON()" class="wb-btn wb-btn-ghost wb-btn-sm" data-tip="Export JSON"><span class="iconify" data-icon="ph:download-simple"></span><span class="hidden sm:inline">Export</span></button>
+      <button onclick="document.getElementById('importInput').click()" class="wb-btn wb-btn-ghost wb-btn-sm" data-tip="Import JSON"><span class="iconify" data-icon="ph:upload-simple"></span><span class="hidden sm:inline">Import</span></button>
+      <button onclick="openJSONModal()" class="wb-btn wb-btn-ghost wb-btn-sm" data-tip="View Payload"><span class="iconify" data-icon="ph:code"></span><span class="hidden sm:inline">JSON</span></button>
+      <input type="file" id="importInput" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+  </div>
+</nav>
+
+<!-- Main Layout -->
+<main class="max-w-[1600px] mx-auto px-4 md:px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr,440px] gap-6 pb-24">
+
+  <!-- Editor Panel -->
+  <div class="space-y-4 min-w-0">
+
+    <!-- Webhook Settings -->
+    <div class="glass overflow-hidden">
+      <div class="section-hdr" onclick="toggleSection(this)">
+        <div class="flex items-center gap-3"><span class="iconify text-[#5865f2] text-xl" data-icon="ph:gear-six-fill"></span><span class="font-semibold text-sm">Webhook Settings</span></div>
+        <span class="iconify chevron text-[#949ba4]" data-icon="ph:caret-down-bold"></span>
+      </div>
+      <div class="section-body">
+        <div class="px-5 pb-5 space-y-4">
+          <div>
+            <label class="wb-label">Webhook URL</label>
+            <div class="pw-wrap">
+              <input type="password" id="webhookUrl" class="wb-input pr-10" placeholder="https://discord.com/api/webhooks/..." oninput="updatePreview()">
+              <button class="pw-toggle" onclick="togglePW(this)" data-tip="Toggle visibility"><span class="iconify text-lg" data-icon="ph:eye"></span></button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="wb-label">Username Override</label>
+              <input type="text" id="username" class="wb-input" placeholder="Webhook Studio" maxlength="80" oninput="updatePreview()">
+              <div class="char-count"><span id="usernameCount">0</span>/80</div>
+            </div>
+            <div>
+              <label class="wb-label">Avatar URL</label>
+              <input type="text" id="avatarUrl" class="wb-input" placeholder="https://example.com/avatar.png" maxlength="2048" oninput="updatePreview()">
+            </div>
+          </div>
+          <div>
+            <label class="wb-label">Message Content</label>
+            <textarea id="content" class="wb-input" placeholder="Optional message content above the embed..." maxlength="2000" oninput="updatePreview()"></textarea>
+            <div class="char-count"><span id="contentCount">0</span>/2000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Templates -->
+    <div class="glass overflow-hidden">
+      <div class="section-hdr" onclick="toggleSection(this)">
+        <div class="flex items-center gap-3"><span class="iconify text-[#eb459e] text-xl" data-icon="ph:sparkle-fill"></span><span class="font-semibold text-sm">Templates</span></div>
+        <span class="iconify chevron text-[#949ba4]" data-icon="ph:caret-down-bold"></span>
+      </div>
+      <div class="section-body">
+        <div class="px-5 pb-5 grid grid-cols-2 sm:grid-cols-3 gap-3" id="templateGrid"></div>
+      </div>
+    </div>
+
+    <!-- Embed Editor -->
+    <div class="glass overflow-hidden">
+      <div class="section-hdr" onclick="toggleSection(this)">
+        <div class="flex items-center gap-3"><span class="iconify text-[#57f287] text-xl" data-icon="ph:paint-brush-fill"></span><span class="font-semibold text-sm">Embed Editor</span></div>
+        <span class="iconify chevron text-[#949ba4]" data-icon="ph:caret-down-bold"></span>
+      </div>
+      <div class="section-body">
+        <div class="px-5 pb-5 space-y-4">
+          <!-- Title -->
+          <div>
+            <label class="wb-label">Title</label>
+            <input type="text" id="embedTitle" class="wb-input" placeholder="Embed title" maxlength="256" oninput="updatePreview()">
+            <div class="char-count"><span id="embedTitleCount">0</span>/256</div>
+          </div>
+          <div>
+            <label class="wb-label">Title URL</label>
+            <input type="text" id="embedTitleUrl" class="wb-input" placeholder="https://example.com" oninput="updatePreview()">
+          </div>
+          <!-- Description -->
+          <div>
+            <label class="wb-label">Description</label>
+            <textarea id="embedDesc" class="wb-input" placeholder="Embed description (supports **markdown**)" maxlength="4096" oninput="updatePreview()"></textarea>
+            <div class="char-count"><span id="embedDescCount">0</span>/4096</div>
+          </div>
+          <!-- Color -->
+          <div>
+            <label class="wb-label">Embed Color</label>
+            <div class="flex items-center gap-3 flex-wrap">
+              <input type="color" id="embedColor" class="wb-color" value="#5865f2" oninput="syncColorFromPicker();updatePreview()">
+              <input type="text" id="embedColorHex" class="wb-input" style="width:110px;font-family:monospace;font-size:13px" value="#5865f2" oninput="syncColorFromHex();updatePreview()" placeholder="#5865f2">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <div class="color-preset active" style="background:#5865f2" onclick="setColor('#5865f2')"></div>
+                <div class="color-preset" style="background:#57f287" onclick="setColor('#57f287')"></div>
+                <div class="color-preset" style="background:#fee75c" onclick="setColor('#fee75c')"></div>
+                <div class="color-preset" style="background:#ed4245" onclick="setColor('#ed4245')"></div>
+                <div class="color-preset" style="background:#eb459e" onclick="setColor('#eb459e')"></div>
+                <div class="color-preset" style="background:#faa61a" onclick="setColor('#faa61a')"></div>
+                <div class="color-preset" style="background:#e8e8e8" onclick="setColor('#e8e8e8')"></div>
+                <div class="color-preset" style="background:#2d7d46" onclick="setColor('#2d7d46')"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Author -->
+          <div class="glass-sm p-4 space-y-3">
+            <label class="wb-label" style="margin-bottom:0"><span class="iconify inline mr-1" data-icon="ph:user-circle"></span>Author</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input type="text" id="authorName" class="wb-input" placeholder="Author name" maxlength="256" oninput="updatePreview()">
+              <input type="text" id="authorUrl" class="wb-input" placeholder="Author URL" oninput="updatePreview()">
+              <input type="text" id="authorIcon" class="wb-input" placeholder="Icon URL" oninput="updatePreview()">
+            </div>
+          </div>
+          <!-- Images -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="wb-label"><span class="iconify inline mr-1" data-icon="ph:image"></span>Thumbnail URL</label>
+              <input type="text" id="thumbnail" class="wb-input" placeholder="https://..." oninput="updatePreview()">
+            </div>
+            <div>
+              <label class="wb-label"><span class="iconify inline mr-1" data-icon="ph:image-square"></span>Image URL</label>
+              <input type="text" id="image" class="wb-input" placeholder="https://..." oninput="updatePreview()">
+            </div>
+          </div>
+          <!-- Footer -->
+          <div class="glass-sm p-4 space-y-3">
+            <label class="wb-label" style="margin-bottom:0"><span class="iconify inline mr-1" data-icon="ph:footprints"></span>Footer</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input type="text" id="footerText" class="wb-input" placeholder="Footer text" maxlength="2048" oninput="updatePreview()">
+              <input type="text" id="footerIcon" class="wb-input" placeholder="Footer icon URL" oninput="updatePreview()">
+            </div>
+          </div>
+          <!-- Timestamp -->
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="timestamp" class="wb-check" onchange="updatePreview()">
+            <label for="timestamp" class="text-sm cursor-pointer select-none">Include current timestamp</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fields Editor -->
+    <div class="glass overflow-hidden">
+      <div class="section-hdr" onclick="toggleSection(this)">
+        <div class="flex items-center gap-3"><span class="iconify text-[#fee75c] text-xl" data-icon="ph:rows-fill"></span><span class="font-semibold text-sm">Fields <span id="fieldCount" class="text-[#949ba4] font-normal">(0/25)</span></span></div>
+        <span class="iconify chevron text-[#949ba4]" data-icon="ph:caret-down-bold"></span>
+      </div>
+      <div class="section-body">
+        <div class="px-5 pb-5 space-y-3" id="fieldsContainer"></div>
+        <div class="px-5 pb-5">
+          <button onclick="addField()" class="wb-btn wb-btn-ghost wb-btn-sm w-full justify-center" id="addFieldBtn">
+            <span class="iconify" data-icon="ph:plus-bold"></span> Add Field
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="glass p-5 flex flex-wrap items-center gap-3">
+      <button onclick="sendWebhook(false)" class="wb-btn wb-btn-primary flex-1 sm:flex-none justify-center" id="sendBtn">
+        <span class="iconify" data-icon="ph:paper-plane-tilt-fill"></span> Send Webhook
+      </button>
+      <button onclick="sendWebhook(true)" class="wb-btn wb-btn-success flex-1 sm:flex-none justify-center" id="testBtn">
+        <span class="iconify" data-icon="ph:flask-fill"></span> Test
+      </button>
+      <button onclick="clearAll()" class="wb-btn wb-btn-danger">
+        <span class="iconify" data-icon="ph:trash-simple"></span> Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- Preview Panel -->
+  <div class="preview-panel lg:sticky lg:top-24 lg:self-start" id="previewPanel">
+    <div class="glass overflow-hidden">
+      <div class="px-5 py-4 border-b border-white/[0.06] flex items-center gap-2">
+        <span class="iconify text-[#5865f2]" data-icon="ph:monitor-fill"></span>
+        <span class="font-semibold text-sm">Live Preview</span>
+        <span class="ml-auto flex items-center gap-1.5 text-xs text-[#57f287]"><span class="w-2 h-2 rounded-full bg-[#57f287] inline-block"></span>Live</span>
+      </div>
+      <div class="p-4 bg-[#2b2d31] rounded-b-2xl" style="min-height:200px">
+        <div id="discordPreview"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Mobile Preview Button -->
+<button id="mobilePreviewBtn" onclick="toggleMobilePreview()">
+  <span class="iconify" data-icon="ph:eye"></span> Preview
+</button>
+
+<!-- JSON Modal -->
+<div class="modal-overlay" id="jsonModal">
+  <div class="modal-box">
+    <div class="flex items-center justify-between p-5 border-b border-white/[0.06]">
+      <div class="flex items-center gap-2"><span class="iconify text-[#5865f2]" data-icon="ph:code-bold"></span><span class="font-semibold">Webhook Payload</span></div>
+      <button onclick="closeJSONModal()" class="wb-btn wb-btn-ghost wb-btn-sm"><span class="iconify" data-icon="ph:x-bold"></span></button>
+    </div>
+    <div class="p-5">
+      <pre id="jsonContent" class="bg-black/30 rounded-xl p-4 text-sm text-[#dbdee1] overflow-auto max-h-[60vh] font-mono leading-relaxed" style="white-space:pre-wrap;word-break:break-all"></pre>
+    </div>
+    <div class="p-5 pt-0 flex gap-3">
+      <button onclick="copyJSON()" class="wb-btn wb-btn-primary flex-1 justify-center"><span class="iconify" data-icon="ph:copy"></span> Copy JSON</button>
+      <button onclick="closeJSONModal()" class="wb-btn wb-btn-ghost">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==================== PARTICLES ====================
+(function(){
+  const c=document.getElementById('particles'),ctx=c.getContext('2d');
+  let w,h,pts=[];
+  function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}
+  window.addEventListener('resize',resize);resize();
+  const n=window.innerWidth<768?15:35;
+  for(let i=0;i<n;i++) pts.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5+0.5,dx:(Math.random()-0.5)*0.3,dy:(Math.random()-0.5)*0.3,o:Math.random()*0.3+0.1});
+  function draw(){ctx.clearRect(0,0,w,h);pts.forEach(p=>{p.x+=p.dx;p.y+=p.dy;if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(88,101,242,${p.o})`;ctx.fill()});requestAnimationFrame(draw)}
+  draw();
+})();
+
+// ==================== TEMPLATES ====================
+const templates=[
+  {id:'blank',name:'Blank',icon:'ph:plus-circle',desc:'Start fresh',color:'#949ba4',
+   embed:{title:'',title_url:'',description:'',color:'#5865f2',author_name:'',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'',footer_icon:'',timestamp:false,fields:[]}},
+  {id:'shop',name:'Shop',icon:'ph:shopping-bag-fill',desc:'Product listing',color:'#5865f2',
+   embed:{title:'🛍️ New Product Available!',title_url:'',description:'Check out our latest premium product — limited stock available!',color:'#5865f2',author_name:'RedRex Store',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'Shop • Limited Stock',footer_icon:'',timestamp:true,
+   fields:[{name:'📦 Product',value:'Premium Account',inline:true},{name:'💰 Price',value:'$4.99',inline:true},{name:'📦 Stock',value:'12 remaining',inline:true},{name:'⚡ Delivery',value:'Instant',inline:true},{name:'🔗 Link',value:'[Buy Now](https://example.com)',inline:false}]}},
+  {id:'hosting',name:'Hosting',icon:'ph:cloud-fill',desc:'Hosting plans',color:'#3ba55d',
+   embed:{title:'☁️ Hosting Plan — Pro',title_url:'',description:'High-performance hosting with enterprise-grade hardware and 24/7 support.',color:'#3ba55d',author_name:'CloudHost',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'CloudHost • 99.9% Uptime',footer_icon:'',timestamp:true,
+   fields:[{name:'🖥️ CPU',value:'4 vCores',inline:true},{name:'💾 RAM',value:'8 GB DDR4',inline:true},{name:'💿 Storage',value:'200 GB NVMe',inline:true},{name:'🌐 Network',value:'1 Gbps',inline:true},{name:'📅 Billing',value:'$9.99/mo',inline:true},{name:'🔗 Order',value:'[Get Started](https://example.com)',inline:true}]}},
+  {id:'gaming',name:'Gaming',icon:'ph:game-controller-fill',desc:'Server status',color:'#57f287',
+   embed:{title:'🎮 Server Status — Online',title_url:'',description:'The server is currently online and accepting players. Join now!',color:'#57f287',author_name:'GameTracker',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'GameTracker • Auto-update',footer_icon:'',timestamp:true,
+   fields:[{name:'📋 Server',value:'Minecraft SMP',inline:true},{name:'👥 Players',value:'42/100',inline:true},{name:'🌍 IP',value:'`play.example.com`',inline:true},{name:'📌 Version',value:'1.20.4',inline:true},{name:'🔗 Join',value:'[Click to Connect](https://example.com)',inline:false}]}},
+  {id:'giveaway',name:'Giveaway',icon:'ph:gift-fill',desc:'Giveaway event',color:'#fee75c',
+   embed:{title:'🎁 Giveaway — Nitro!',title_url:'',description:'React with 🎉 to enter! Winner will be drawn at the end time.',color:'#fee75c',author_name:'GiveawayBot',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'Giveaway • Ends in 24h',footer_icon:'',timestamp:true,
+   fields:[{name:'🏆 Prize',value:'1x Discord Nitro (1 month)',inline:true},{name:'👥 Entries',value:'156',inline:true},{name:'⏰ Ends',value:'Tomorrow 8:00 PM',inline:true},{name:'📋 Requirements',value:'Must be in server 24h+',inline:true},{name:'✅ How to Enter',value:'React with 🎉 below this message',inline:false}]}},
+  {id:'payment',name:'Payment',icon:'ph:credit-card-fill',desc:'Order confirmation',color:'#23a559',
+   embed:{title:'💳 Payment Confirmed',title_url:'',description:'Your payment has been processed successfully. Thank you for your purchase!',color:'#23a559',author_name:'Payments',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'Payment System • Secure',footer_icon:'',timestamp:true,
+   fields:[{name:'🧾 Order ID',value:'#ORD-28471',inline:true},{name:'👤 Customer',value:'user#1234',inline:true},{name:'📦 Product',value:'Premium Plan',inline:true},{name:'💵 Amount',value:'$9.99',inline:true},{name:'✅ Status',value:'**Paid**',inline:true},{name:'📅 Date',value:'2025-01-15',inline:true}]}},
+  {id:'announcement',name:'Announcement',icon:'ph:megaphone-fill',desc:'Important update',color:'#ed4245',
+   embed:{title:'📢 Important Announcement',title_url:'',description:'We have an important update to share with everyone. Please read carefully.',color:'#ed4245',author_name:'Staff Team',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'Official Announcement',footer_icon:'',timestamp:true,
+   fields:[{name:'📌 Priority',value:'**High**',inline:true},{name:'📅 Posted',value:'January 2025',inline:true},{name:'📋 Info',value:'New rules and guidelines have been updated. Please review them in #rules.',inline:false},{name:'🔗 Details',value:'[Read More](https://example.com)',inline:false}]}},
+  {id:'maintenance',name:'Maintenance',icon:'ph:wrench-fill',desc:'Downtime notice',color:'#faa61a',
+   embed:{title:'🛠️ Scheduled Maintenance',title_url:'',description:'We will be performing scheduled maintenance. Services may be temporarily unavailable.',color:'#faa61a',author_name:'System Status',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'Status Page • Monitoring',footer_icon:'',timestamp:true,
+   fields:[{name:'🔴 Status',value:'Maintenance in Progress',inline:true},{name:'⏱️ Duration',value:'~2 hours',inline:true},{name:'🎯 ETA',value:'10:00 PM UTC',inline:true},{name:'📋 Affected',value:'API, Dashboard, Webhooks',inline:false},{name:'💡 Info',value:'Data will not be affected. All systems will resume automatically.',inline:false}]}},
+  {id:'welcome',name:'Welcome',icon:'ph:hand-waving-fill',desc:'New member',color:'#5865f2',
+   embed:{title:'🎉 Welcome to the Server!',title_url:'',description:'We\'re glad to have you here. Check out the channels and make yourself at home!',color:'#5865f2',author_name:'Welcome Bot',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'Auto-message • New Member',footer_icon:'',timestamp:true,
+   fields:[{name:'👤 Member',value:'NewUser#0001',inline:true},{name:'🏠 Server',value:'My Community',inline:true},{name:'📊 Members',value:'1,234',inline:true},{name:'📋 Channels',value:'#rules • #announcements • #general',inline:false},{name:'💡 Tip',value:'Grab roles in #self-roles and introduce yourself in #introductions!',inline:false}]}},
+  {id:'alert',name:'Alert',icon:'ph:warning-fill',desc:'Warning/alert',color:'#f23f43',
+   embed:{title:'⚠️ Security Alert',title_url:'',description:'A suspicious activity has been detected. Please review the details below.',color:'#f23f43',author_name:'Security System',author_url:'',author_icon:'',thumbnail:'',image:'',footer_text:'Security • Automated Alert',footer_icon:'',timestamp:true,
+   fields:[{name:'🔴 Severity',value:'**HIGH**',inline:true},{name:'🎯 Type',value:'Unusual Login',inline:true},{name:'📍 Location',value:'Unknown IP',inline:true},{name:'📝 Description',value:'A login attempt was detected from an unrecognized device and location.',inline:false},{name:'🔧 Action',value:'Please verify your account and change your password immediately.',inline:false}]}}
+];
+
+// ==================== STATE ====================
+let fields=[];
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded',()=>{
+  renderTemplates();
+  updatePreview();
+});
+
+// ==================== TEMPLATES ====================
+function renderTemplates(){
+  const g=document.getElementById('templateGrid');
+  g.innerHTML=templates.map(t=>`
+    <div class="tmpl-card" onclick="applyTemplate('${t.id}')">
+      <div class="relative z-10">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center mb-2" style="background:${t.color}22">
+          <span class="iconify text-lg" style="color:${t.color}" data-icon="${t.icon}"></span>
+        </div>
+        <div class="font-semibold text-sm text-[#dbdee1]">${t.name}</div>
+        <div class="text-xs text-[#949ba4] mt-0.5">${t.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function applyTemplate(id){
+  const t=templates.find(x=>x.id===id);
+  if(!t)return;
+  const e=t.embed;
+  document.getElementById('embedTitle').value=e.title||'';
+  document.getElementById('embedTitleUrl').value=e.title_url||'';
+  document.getElementById('embedDesc').value=e.description||'';
+  setColor(e.color||'#5865f2');
+  document.getElementById('authorName').value=e.author_name||'';
+  document.getElementById('authorUrl').value=e.author_url||'';
+  document.getElementById('authorIcon').value=e.author_icon||'';
+  document.getElementById('thumbnail').value=e.thumbnail||'';
+  document.getElementById('image').value=e.image||'';
+  document.getElementById('footerText').value=e.footer_text||'';
+  document.getElementById('footerIcon').value=e.footer_icon||'';
+  document.getElementById('timestamp').checked=!!e.timestamp;
+  fields=JSON.parse(JSON.stringify(e.fields||[]));
+  renderFields();
+  updatePreview();
+  toast('Template loaded: '+t.name,'info');
+}
+
+// ==================== FIELDS ====================
+function addField(){
+  if(fields.length>=25){toast('Maximum 25 fields reached','error');return}
+  fields.push({name:'',value:'',inline:false});
+  renderFields();updatePreview();
+}
+function removeField(i){fields.splice(i,1);renderFields();updatePreview()}
+function moveField(i,d){
+  const j=i+d;if(j<0||j>=fields.length)return;
+  [fields[i],fields[j]]=[fields[j],fields[i]];
+  renderFields();updatePreview();
+}
+function renderFields(){
+  const c=document.getElementById('fieldsContainer');
+  const btn=document.getElementById('addFieldBtn');
+  document.getElementById('fieldCount').textContent=`(${fields.length}/25)`;
+  if(fields.length>=25)btn.disabled=true;else btn.disabled=false;
+  c.innerHTML=fields.map((f,i)=>`
+    <div class="field-row space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-[#949ba4]">FIELD ${i+1}</span>
+        <div class="flex items-center gap-1">
+          <button onclick="moveField(${i},-1)" class="wb-btn wb-btn-ghost wb-btn-sm" style="padding:4px 6px" ${i===0?'disabled':''}><span class="iconify text-xs" data-icon="ph:caret-up-bold"></span></button>
+          <button onclick="moveField(${i},1)" class="wb-btn wb-btn-ghost wb-btn-sm" style="padding:4px 6px" ${i===fields.length-1?'disabled':''}><span class="iconify text-xs" data-icon="ph:caret-down-bold"></span></button>
+          <button onclick="removeField(${i})" class="wb-btn wb-btn-ghost wb-btn-sm" style="padding:4px 6px;color:#f23f43"><span class="iconify text-xs" data-icon="ph:trash-simple-bold"></span></button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <input type="text" class="wb-input text-sm" placeholder="Field name" maxlength="256" value="${esc(f.name)}" oninput="fields[${i}].name=this.value;updatePreview()">
+          <div class="char-count"><span>${f.name.length}</span>/256</div>
+        </div>
+        <div>
+          <input type="text" class="wb-input text-sm" placeholder="Field value" maxlength="1024" value="${esc(f.value)}" oninput="fields[${i}].value=this.value;updatePreview()">
+          <div class="char-count"><span>${f.value.length}</span>/1024</div>
+        </div>
+      </div>
+      <label class="flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" class="wb-check" ${f.inline?'checked':''} onchange="fields[${i}].inline=this.checked;updatePreview()">
+        <span class="text-xs text-[#b5bac1]">Inline field</span>
+      </label>
+    </div>
+  `).join('');
+}
+function esc(s){return s.replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+
+// ==================== COLOR ====================
+function setColor(hex){
+  document.getElementById('embedColor').value=hex;
+  document.getElementById('embedColorHex').value=hex;
+  document.querySelectorAll('.color-preset').forEach(p=>{p.classList.toggle('active',p.style.background===hex||rgbToHex(p.style.background)===hex.toLowerCase())});
+  updatePreview();
+}
+function syncColorFromPicker(){const v=document.getElementById('embedColor').value;setColor(v)}
+function syncColorFromHex(){
+  let v=document.getElementById('embedColorHex').value.trim();
+  if(!v.startsWith('#'))v='#'+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('embedColor').value=v;document.querySelectorAll('.color-preset').forEach(p=>{p.classList.toggle('active',rgbToHex(p.style.background)===v.toLowerCase())});updatePreview()}
+}
+function rgbToHex(rgb){if(rgb.startsWith('#'))return rgb.toLowerCase();const m=rgb.match(/\d+/g);if(!m||m.length<3)return'';return'#'+m.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('')}
+
+// ==================== PREVIEW ====================
+function getFormData(){
+  return{
+    webhook_url:document.getElementById('webhookUrl').value.trim(),
+    username:document.getElementById('username').value.trim(),
+    avatar_url:document.getElementById('avatarUrl').value.trim(),
+    content:document.getElementById('content').value,
+    embed:{
+      title:document.getElementById('embedTitle').value,
+      title_url:document.getElementById('embedTitleUrl').value.trim(),
+      description:document.getElementById('embedDesc').value,
+      color:document.getElementById('embedColorHex').value.trim()||document.getElementById('embedColor').value,
+      author_name:document.getElementById('authorName').value.trim(),
+      author_url:document.getElementById('authorUrl').value.trim(),
+      author_icon:document.getElementById('authorIcon').value.trim(),
+      thumbnail:document.getElementById('thumbnail').value.trim(),
+      image:document.getElementById('image').value.trim(),
+      footer_text:document.getElementById('footerText').value.trim(),
+      footer_icon:document.getElementById('footerIcon').value.trim(),
+      timestamp:document.getElementById('timestamp').checked,
+      fields:JSON.parse(JSON.stringify(fields))
+    }
+  };
+}
+
+function updatePreview(){
+  const d=getFormData();
+  // Char counters
+  document.getElementById('usernameCount').textContent=d.username.length;
+  document.getElementById('contentCount').textContent=d.content.length;
+  document.getElementById('embedTitleCount').textContent=d.embed.title.length;
+  document.getElementById('embedDescCount').textContent=d.embed.description.length;
+  // Update counter colors
+  updateCountColor('usernameCount',d.username.length,80);
+  updateCountColor('contentCount',d.content.length,2000);
+  updateCountColor('embedTitleCount',d.embed.title.length,256);
+  updateCountColor('embedDescCount',d.embed.description.length,4096);
+
+  const el=document.getElementById('discordPreview');
+  const e=d.embed;
+  const hasContent=d.content.trim();
+  const hasEmbed=e.title||e.description||e.author_name||e.thumbnail||e.image||e.footer_text||e.fields.some(f=>f.name||f.value);
+
+  if(!hasContent&&!hasEmbed){
+    el.innerHTML='<div class="dc-empty"><span class="iconify text-3xl mb-2 block" data-icon="ph:chat-circle-dots" style="color:#4e5058"></span>Start typing to see a live preview</div>';
+    return;
+  }
+
+  let html='<div class="dc-msg">';
+  // Header
+  const uname=d.username||'Webhook Studio';
+  const now=new Date();
+  const timeStr='Today at '+now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+  html+=`<div class="dc-msg-header">
+    ${d.avatar_url?`<img src="${esc(d.avatar_url)}" class="dc-avatar" onerror="this.outerHTML='<div class=\\'dc-avatar\\'><span class=\\'iconify text-white text-xl\\' data-icon=\\'ph:robot\\'></span></div>'">`:`<div class="dc-avatar"><span class="iconify text-white text-xl" data-icon="ph:robot"></span></div>`}
+    <div><div class="flex items-center gap-1.5"><span class="font-semibold text-sm text-[#dbdee1]">${esc(uname)}</span><span class="dc-bot-badge">BOT</span></div><span class="dc-timestamp">${timeStr}</span></div>
+  </div>`;
+
+  // Content
+  if(hasContent){
+    html+=`<div class="dc-content">${formatDiscord(d.content)}</div>`;
+  }
+
+  // Embed
+  if(hasEmbed){
+    const borderColor=e.color||'#5865f2';
+    html+=`<div class="dc-embed" style="border-left-color:${borderColor}">`;
+    // Author
+    if(e.author_name){
+      html+=`<div class="dc-embed-author">${e.author_icon?`<img src="${esc(e.author_icon)}" class="dc-embed-author-icon" onerror="this.style.display='none'">`:''}<span class="text-sm font-semibold" style="color:#dbdee1">${e.author_url?`<a href="${esc(e.author_url)}" target="_blank" class="hover:underline" style="color:#00aff4">${esc(e.author_name)}</a>`:esc(e.author_name)}</span></div>`;
+    }
+    // Title
+    if(e.title){
+      html+=`<div class="dc-embed-title">${e.title_url?`<a href="${esc(e.title_url)}" target="_blank">${formatDiscord(e.title)}</a>`:formatDiscord(e.title)}</div>`;
+    }
+    // Description
+    if(e.description){
+      html+=`<div class="dc-embed-desc">${formatDiscord(e.description)}</div>`;
+    }
+    // Thumbnail + Fields side by side trick: just render fields normally
+    if(e.thumbnail){
+      html+=`<div style="float:right;margin-left:16px;margin-bottom:4px;max-width:80px;max-height:80px"><img src="${esc(e.thumbnail)}" style="max-width:100%;max-height:80px;border-radius:4px;display:block" onerror="this.parentElement.style.display='none'"></div>`;
+    }
+    // Fields
+    const validFields=e.fields.filter(f=>f.name||f.value);
+    if(validFields.length){
+      html+='<div class="dc-embed-fields" style="overflow:hidden">';
+      validFields.forEach(f=>{
+        html+=`<div class="dc-embed-field ${f.inline?'':'inline-false'}"><div class="dc-embed-field-name">${formatDiscord(f.name)}</div><div class="dc-embed-field-value">${formatDiscord(f.value)}</div></div>`;
+      });
+      html+='</div><div style="clear:both"></div>';
+    }
+    // Image
+    if(e.image){
+      html+=`<img src="${esc(e.image)}" class="dc-embed-img" onerror="this.style.display='none'">`;
+    }
+    // Footer
+    if(e.footer_text){
+      html+=`<div class="dc-embed-footer">${e.footer_icon?`<img src="${esc(e.footer_icon)}" class="dc-embed-footer-icon" onerror="this.style.display='none'">`:''}<span class="text-xs text-[#949ba4]">${esc(e.footer_text)}${e.timestamp?' • '+timeStr:''}</span></div>`;
+    }else if(e.timestamp){
+      html+=`<div class="dc-embed-footer"><span class="text-xs text-[#949ba4]">${timeStr}</span></div>`;
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function updateCountColor(id,len,max){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const pct=len/max;
+  el.parentElement.classList.remove('warn','danger');
+  if(pct>0.9)el.parentElement.classList.add('danger');
+  else if(pct>0.75)el.parentElement.classList.add('warn');
+}
+
+function formatDiscord(text){
+  if(!text)return'';
+  let s=esc(text);
+  // Bold
+  s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  // Italic
+  s=s.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // Inline code
+  s=s.replace(/`([^`]+)`/g,'<code style="background:rgba(0,0,0,0.3);padding:2px 4px;border-radius:3px;font-size:13px;font-family:monospace">$1</code>');
+  // Links
+  s=s.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" style="color:#00aff4;text-decoration:none">$1</a>');
+  // Newlines
+  s=s.replace(/\n/g,'<br>');
+  return s;
+}
+
+// ==================== SECTIONS ====================
+function toggleSection(hdr){
+  hdr.classList.toggle('collapsed');
+  const body=hdr.nextElementSibling;
+  body.classList.toggle('collapsed');
+}
+
+// ==================== PASSWORD TOGGLE ====================
+function togglePW(btn){
+  const inp=btn.parentElement.querySelector('input');
+  const isP=inp.type==='password';
+  inp.type=isP?'text':'password';
+  btn.querySelector('.iconify').setAttribute('data-icon',isP?'ph:eye-slash':'ph:eye');
+}
+
+// ==================== SEND ====================
+async function sendWebhook(isTest){
+  const d=getFormData();
+  if(!d.webhook_url){toast('Please enter a webhook URL','error');return}
+  const hasContent=d.content.trim();
+  const hasEmbed=d.embed.title||d.embed.description||d.embed.fields.some(f=>f.name);
+  if(!hasContent&&!hasEmbed){toast('Add message content or an embed','error');return}
+
+  const payload=JSON.parse(JSON.stringify(d));
+  if(isTest) payload.content='🧪 **Test Message**\n'+payload.content;
+
+  const btn=isTest?document.getElementById('testBtn'):document.getElementById('sendBtn');
+  const origHTML=btn.innerHTML;
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner"></div> Sending...';
+
+  try{
+    const resp=await fetch('/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.success){toast(isTest?'Test webhook sent!':'Webhook sent successfully!','success')}
+    else{toast(data.error||'Unknown error','error')}
+  }catch(err){
+    toast('Failed to connect to server. Is Flask running?','error');
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML=origHTML;
+  }
+}
+
+// ==================== CLEAR ====================
+function clearAll(){
+  document.getElementById('webhookUrl').value='';
+  document.getElementById('username').value='';
+  document.getElementById('avatarUrl').value='';
+  document.getElementById('content').value='';
+  document.getElementById('embedTitle').value='';
+  document.getElementById('embedTitleUrl').value='';
+  document.getElementById('embedDesc').value='';
+  setColor('#5865f2');
+  document.getElementById('authorName').value='';
+  document.getElementById('authorUrl').value='';
+  document.getElementById('authorIcon').value='';
+  document.getElementById('thumbnail').value='';
+  document.getElementById('image').value='';
+  document.getElementById('footerText').value='';
+  document.getElementById('footerIcon').value='';
+  document.getElementById('timestamp').checked=false;
+  fields=[];
+  renderFields();
+  updatePreview();
+  toast('Editor cleared','info');
+}
+
+// ==================== SAVE/LOAD ====================
+function saveDraft(){
+  const d=getFormData();
+  localStorage.setItem('webhookStudio_draft',JSON.stringify(d));
+  toast('Draft saved','success');
+}
+function loadDraft(){
+  const raw=localStorage.getItem('webhookStudio_draft');
+  if(!raw){toast('No saved draft found','error');return}
+  try{
+    const d=JSON.parse(raw);
+    document.getElementById('webhookUrl').value=d.webhook_url||'';
+    document.getElementById('username').value=d.username||'';
+    document.getElementById('avatarUrl').value=d.avatar_url||'';
+    document.getElementById('content').value=d.content||'';
+    if(d.embed){
+      document.getElementById('embedTitle').value=d.embed.title||'';
+      document.getElementById('embedTitleUrl').value=d.embed.title_url||'';
+      document.getElementById('embedDesc').value=d.embed.description||'';
+      setColor(d.embed.color||'#5865f2');
+      document.getElementById('authorName').value=d.embed.author_name||'';
+      document.getElementById('authorUrl').value=d.embed.author_url||'';
+      document.getElementById('authorIcon').value=d.embed.author_icon||'';
+      document.getElementById('thumbnail').value=d.embed.thumbnail||'';
+      document.getElementById('image').value=d.embed.image||'';
+      document.getElementById('footerText').value=d.embed.footer_text||'';
+      document.getElementById('footerIcon').value=d.embed.footer_icon||'';
+      document.getElementById('timestamp').checked=!!d.embed.timestamp;
+      fields=Array.isArray(d.embed.fields)?JSON.parse(JSON.stringify(d.embed.fields)):[];
+    }
+    renderFields();updatePreview();
+    toast('Draft loaded','success');
+  }catch(e){toast('Failed to parse draft','error')}
+}
+
+// ==================== EXPORT/IMPORT ====================
+function exportJSON(){
+  const d=getFormData();
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='webhook-config.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('JSON exported','success');
+}
+function importJSON(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.embed){
+        document.getElementById('embedTitle').value=d.embed.title||'';
+        document.getElementById('embedTitleUrl').value=d.embed.title_url||'';
+        document.getElementById('embedDesc').value=d.embed.description||'';
+        setColor(d.embed.color||'#5865f2');
+        document.getElementById('authorName').value=d.embed.author_name||'';
+        document.getElementById('authorUrl').value=d.embed.author_url||'';
+        document.getElementById('authorIcon').value=d.embed.author_icon||'';
+        document.getElementById('thumbnail').value=d.embed.thumbnail||'';
+        document.getElementById('image').value=d.embed.image||'';
+        document.getElementById('footerText').value=d.embed.footer_text||'';
+        document.getElementById('footerIcon').value=d.embed.footer_icon||'';
+        document.getElementById('timestamp').checked=!!d.embed.timestamp;
+        fields=Array.isArray(d.embed.fields)?JSON.parse(JSON.stringify(d.embed.fields)):[];
+      }
+      document.getElementById('webhookUrl').value=d.webhook_url||'';
+      document.getElementById('username').value=d.username||'';
+      document.getElementById('avatarUrl').value=d.avatar_url||'';
+      document.getElementById('content').value=d.content||'';
+      renderFields();updatePreview();
+      toast('Configuration imported','success');
+    }catch(err){toast('Invalid JSON file','error')}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ==================== JSON MODAL ====================
+function openJSONModal(){
+  const d=getFormData();
+  const payload={};
+  if(d.username)payload.username=d.username;
+  if(d.avatar_url)payload.avatar_url=d.avatar_url;
+  if(d.content)payload.content=d.content;
+  const e=d.embed;
+  if(e.title||e.description||e.author_name||e.thumbnail||e.image||e.footer_text||e.fields.some(f=>f.name)){
+    const embed={};
+    if(e.title)embed.title=e.title;
+    if(e.title_url)embed.url=e.title_url;
+    if(e.description)embed.description=e.description;
+    if(e.color){
+      try{embed.color=parseInt(e.color.replace('#',''),16)}catch(err){}
+    }
+    if(e.author_name){const a={};a.name=e.author_name;if(e.author_url)a.url=e.author_url;if(e.author_icon)a.icon_url=e.author_icon;embed.author=a}
+    if(e.thumbnail)embed.thumbnail={url:e.thumbnail};
+    if(e.image)embed.image={url:e.image};
+    if(e.footer_text){const f={};f.text=e.footer_text;if(e.footer_icon)f.icon_url=e.footer_icon;embed.footer=f}
+    if(e.timestamp)embed.timestamp=new Date().toISOString();
+    const validFields=e.fields.filter(f=>f.name&&f.value).map(f=>({name:f.name,value:f.value,inline:!!f.inline}));
+    if(validFields.length)embed.fields=validFields;
+    payload.embeds=[embed];
+  }
+  document.getElementById('jsonContent').textContent=JSON.stringify(payload,null,2);
+  document.getElementById('jsonModal').classList.add('open');
+}
+function closeJSONModal(){document.getElementById('jsonModal').classList.remove('open')}
+function copyJSON(){
+  const text=document.getElementById('jsonContent').textContent;
+  navigator.clipboard.writeText(text).then(()=>toast('JSON copied!','success')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('JSON copied!','success');
+  });
+}
+
+// ==================== TOAST ====================
+function toast(msg,type='info'){
+  const c=document.getElementById('toastContainer');
+  const icons={success:'ph:check-circle-fill',error:'ph:x-circle-fill',info:'ph:info-fill'};
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  el.innerHTML=`<span class="iconify text-lg flex-shrink-0" data-icon="${icons[type]||icons.info}"></span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(()=>{el.classList.add('removing');setTimeout(()=>el.remove(),300)},3500);
+}
+
+// ==================== MOBILE PREVIEW ====================
+function toggleMobilePreview(){
+  document.getElementById('previewPanel').classList.toggle('show');
+}
+
+// Close modals on backdrop click
+document.getElementById('jsonModal').addEventListener('click',function(e){if(e.target===this)closeJSONModal()});
+</script>
+</body>
+</html>
